@@ -25,7 +25,8 @@ public class Serie {
     private String atores;
     private String post;
     private String sinopse;
-    @Transient
+    /*o mappedby será a relação principal, Cacadade é a persistência e o fetch retorna associações.*/
+    @OneToMany(mappedBy = "serie", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Episodio> episodios = new ArrayList<>();
 
     public Serie(){}
@@ -110,6 +111,8 @@ public class Serie {
     }
 
     public void setEpisodios(List<Episodio> episodios) {
+        //obrigatório em relações com chave estrangeiras
+        episodios.forEach(e -> e.setSerie(this));
         this.episodios = episodios;
     }
 
@@ -121,6 +124,7 @@ public class Serie {
                 ", avaliacao=" + avaliacao +
                 ", atores='" + atores + '\'' +
                 ", post='" + post + '\'' +
-                ", sinopse='" + sinopse + '\'' + ".";
+                ", sinopse='" + sinopse + '\'' + "," +
+                 "Epiósdios: \n" +'\'' + episodios + '\'' + ".";
     }
 }
