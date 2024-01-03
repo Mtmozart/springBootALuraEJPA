@@ -187,7 +187,8 @@ public class Principal {
         System.out.println("Até quantas temporadas ?");
         Integer quantidadeTemporadas = leitura.nextInt();
 
-    List<Serie> seriePorTemporadaEAvaliacao = repositorio.findByAvaliacaoGreaterThanEqualAndTotalTemporadasLessThanEqual(avalicaoSerie, quantidadeTemporadas);
+   // List<Serie> seriePorTemporadaEAvaliacao = repositorio.findByAvaliacaoGreaterThanEqualAndTotalTemporadasLessThanEqual(avalicaoSerie, quantidadeTemporadas);
+       List<Serie> seriePorTemporadaEAvaliacao = repositorio.seriesPorTemporadaEAvaliacao(avalicaoSerie, quantidadeTemporadas);
         System.out.println("Séries disponiveis: ");
         seriePorTemporadaEAvaliacao.forEach(System.out::println);
     }
