@@ -1,12 +1,10 @@
 package br.com.alura.screenmatch.principal;
 
-import br.com.alura.screenmatch.model.DadosSerie;
-import br.com.alura.screenmatch.model.DadosTemporada;
-import br.com.alura.screenmatch.model.Episodio;
-import br.com.alura.screenmatch.model.Serie;
+import br.com.alura.screenmatch.model.*;
 import br.com.alura.screenmatch.repository.SerieRepository;
 import br.com.alura.screenmatch.service.ConsumoApi;
 import br.com.alura.screenmatch.service.ConverteDados;
+import org.hibernate.event.spi.SaveOrUpdateEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
@@ -37,6 +35,11 @@ public class Principal {
                     1 - Buscar séries
                     2 - Buscar episódios
                     3 - Listar séries buscadas
+                    4 - Buscar série 
+                    5 - Buscar série por ator
+                    6 - Buscar top 05 séries
+                    7 - Buscar series por categoria
+                    8 - Buscar series por quantidade de temporada e avaliação
                                     
                     0 - Sair                                 
                     """;
@@ -55,6 +58,22 @@ public class Principal {
                 case 3:
                     listarSeriesBuscadas();
                     break;
+                case 4:
+                    buscarSeriePorTitulo();
+                    break;
+                case 5:
+                    buscarSeriePorAtor();
+                    break;
+                case 6:
+                    buscarTop5Serie();
+                    break;
+                case 7:
+                    buscarTopPorCategoria();
+                    break;
+                case 8:
+                    buscarTopPorSerieETemporada();
+                    break;
+
                 case 0:
                     System.out.println("Saindo...");
                     break;
@@ -63,6 +82,9 @@ public class Principal {
             }
         }
     }
+
+
+
 
     private void buscarSerieWeb() {
         DadosSerie dados = getDadosSerie();
@@ -84,13 +106,11 @@ public class Principal {
         listarSeriesBuscadas();
         System.out.println("Escolha uma série pelo nome");
         var nomeSerie = leitura.nextLine();
-        Optional<Serie> serie = series.stream()
-                .filter(s -> s.getTitulo().toUpperCase().contains(nomeSerie.toUpperCase()))
-                .findFirst();
+        Optional<Serie> serie = repositorio.findByTituloContainingIgnoreCase(nomeSerie);
 
         if (serie.isPresent()) {
 
-            var serieEncontrada  = serie.get();
+            var serieEncontrada = serie.get();
             List<DadosTemporada> temporadas = new ArrayList<>();
 
             for (int i = 1; i <= serieEncontrada.getTotalTemporadas(); i++) {
@@ -101,15 +121,14 @@ public class Principal {
 
             temporadas.forEach(System.out::println);
 
-           List<Episodio> episodios = temporadas.stream()
+            List<Episodio> episodios = temporadas.stream()
                     .flatMap(d -> d.episodios().stream()
                             .map(e -> new Episodio(e.numero(), e)))
-                            .collect(Collectors.toList());
-           serieEncontrada.setEpisodios(episodios);
-           repositorio.save(serieEncontrada);
+                    .collect(Collectors.toList());
+            serieEncontrada.setEpisodios(episodios);
+            repositorio.save(serieEncontrada);
 
-        }
-        else{
+        } else {
             System.out.println("Série não encontrada.");
         }
     }
@@ -120,5 +139,56 @@ public class Principal {
                 .sorted(Comparator.comparing(Serie::getGenero)).forEach(System.out::println);
     }
 
+    private void buscarSeriePorTitulo() {
+        System.out.println("Escolha uma série pelo título");
+        var nomeSerie = leitura.nextLine();
 
+        Optional<Serie> serieBuscada = repositorio.findByTituloContainingIgnoreCase(nomeSerie);
+        if (serieBuscada.isPresent()) {
+            System.out.println("Dados da série" + serieBuscada.get());
+        } else {
+            System.out.println("Serie não encontrada.");
+        }
+    }
+
+    private void buscarSeriePorAtor() {
+        System.out.println("Qual o ator para busca?");
+        var nomeDoAtor = leitura.nextLine();
+        System.out.println("Avaliações a partir de que valor?");
+        var avaliacaoSerie = leitura.nextDouble();
+        List<Serie> seriesEcontradas = repositorio.findByAtoresContainingIgnoreCaseAndAvaliacaoGreaterThanEqual(nomeDoAtor, avaliacaoSerie);
+        System.out.println("Series em que " + nomeDoAtor + " trabalhou: ");
+        seriesEcontradas.forEach(s ->
+                System.out.println(s.getTitulo() + ". Avaliação: " + s.getAvaliacao())
+        );
+    }
+
+    private void buscarTop5Serie() {
+        List<Serie> seriesTop = repositorio.findTop5ByOrderByAvaliacaoDesc();
+        System.out.println("Top 05 séries: ");
+        seriesTop.forEach(s ->
+                System.out.println(s.getTitulo() + ". Avaliação: " + s.getAvaliacao()
+                ));
+    }
+
+    private void buscarTopPorCategoria() {
+        System.out.println("Deseja buscar série de que categoria/genero?");
+        var nomeGenero = leitura.nextLine();
+        Categoria categoria = Categoria.fromPortugues(nomeGenero);
+        List<Serie> seriePorCategoria = repositorio.findByGenero(categoria);
+        System.out.println("Séries da categoria " + nomeGenero + ".");
+        seriePorCategoria.forEach(System.out::println);
+    }
+
+    private void buscarTopPorSerieETemporada() {
+        System.out.println("Qual a nota que você deseja assistir ?");
+        var avalicaoSerie = leitura.nextDouble();
+
+        System.out.println("Até quantas temporadas ?");
+        Integer quantidadeTemporadas = leitura.nextInt();
+
+    List<Serie> seriePorTemporadaEAvaliacao = repositorio.findByAvaliacaoGreaterThanEqualAndTotalTemporadasLessThanEqual(avalicaoSerie, quantidadeTemporadas);
+        System.out.println("Séries disponiveis: ");
+        seriePorTemporadaEAvaliacao.forEach(System.out::println);
+    }
 }
